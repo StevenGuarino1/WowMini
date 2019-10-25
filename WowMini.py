@@ -5,22 +5,32 @@ import sys
 import math
 
 RED = [255, 0, 0]
-BLUE = [0, 255, 0]
-GREEN = [0, 0, 255]
+GREEN = [0, 255, 0]
+BLUE = [0, 0, 255]
 BLACK = [0, 0, 0]
 WHITE = [255, 255, 255]
 
+sprite_w = 20
+sprite_h = 60
+
 y_boundary = 0
+
+ground_y = 293
 
 W, H = 800, 400
 win = pygame.display.set_mode((W, H))
 pygame.display.set_caption('Side Scroller')
 
-velocity = list([-7.5, -7, -6.5, -6, -5.5, -5, -4.5, -4, -3.5, -3, -2.5, -2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5])
+velocity = list([-9.5, -9, -8.5, -8, -7.5, -7, -6.5, -6, -5.5, -5, -4.5, -4, -2.5, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5])
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, x, y, py):
+    def __init__(self, x, y):
         super().__init__()
+
+        self.image = pygame.Surface([sprite_w, sprite_h])
+        self.image.fill(RED)
+        # Gets rect object for collision detection
+        self.rect = self.image.get_rect()
 
         # Starting position
         self.x = x
@@ -30,18 +40,18 @@ class Player(pygame.sprite.Sprite):
         self.jumping = False
 
         # Setting boundaries
-        self.platform_y = py
+        self.platform_y = ground_y
 
         # Settings speeds
         self.x_speed = 12
         self.velocity_index = 0
 
-        self.rect = pygame.Rect([int(self.x), int(self.y), 20, 60])
+        # Did player cast spell?
+        self.castingSpell = False
+
+        all_sprites_list.add(self)
 
     def do_jump(self):
-        global velocity
-        velocity = list([-7.5, -7, -6.5, -6, -5.5, -5, -4.5, -4, -3.5, -3, -2.5, -2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5])
-
         if self.jumping:
             # Changing y pos at velocity index speed
             self.y += velocity[self.velocity_index]
@@ -63,54 +73,66 @@ class Player(pygame.sprite.Sprite):
         if key[K_LEFT]:
             self.x -= self.x_speed
 
-    def do_draw(self):
-        pygame.draw(self.rect)
+    def playerUpdate(self):
+        if self.castingSpell:
+            Bullet()
+
+        player.rect.x = self.x
+        player.rect.y = self.y
+        all_sprites_list.update(player)
 
     def do_player(self):
         self.do_jump()
         self.do_move()
-        self.do_draw()
-        pygame.display.update()
+        self.playerUpdate()
 
 
 class Enemy(pygame.sprite.Sprite):
-    walkRight = pygame.image.load('place_holder.png')
-    walkLeft = pygame.image.load('place_holder.png')
-
-    def __init__(self, x, y, width, height):
+    def __init__(self, x, y):
         super().__init__()
+
+        self.image = pygame.Surface([sprite_w, sprite_h])
+        self.image.fill(BLUE)
+        # Gets rect object for collision detection
+        self.rect = self.image.get_rect()
 
         self.x = x
         self.y = y
 
-        self.width = width
-        self.height = height
-
         self.vel = 1
 
-        self.enemy_killed_list = []
-
-        self.rect = pygame.Rect([int(self.x), int(self.y), 20, 60])
+        all_sprites_list.add(self)
 
     def move(self):
-
-        if self.x > player.x:
+        if self.rect.x > player.x:
             self.x -= self.vel
-        elif self.x == player.x:
-            self.enemy_killed_list = pygame.sprite.spritecollide(player, enemy_list, True)
         else:
             self.x += self.vel
 
-    def draw(self):
-        self.move()
-        pygame.draw.rect(self.rect) # Created pygames "rect" objects, rect objects used in collision detection in Enemy's move method,
-                                    # TODO Draw rect objects properly
+    def enemyUpdate(self):
+        enemy.rect.x = self.x
+        enemy.rect.y = self.y
+        all_sprites_list.update(enemy)
 
     def do_enemy(self):
         self.move()
-        # self.checkCollision()
-        self.draw()
-        pygame.display.update()
+        self.enemyUpdate()
+
+class Bullet(pygame.sprite.Sprite):
+    """ This class represents the bullet . """
+    def __init__(self):
+        # Call the parent class (Sprite) constructor
+        super().__init__()
+
+        self.image = pygame.Surface([5, 5])
+        self.image.fill(GREEN)
+        self.rect = self.image.get_rect()
+
+        self.rect.x = player.rect.center[0]
+        self.rect.y = player.rect.center[1]
+
+        self.rect.y -= 3
+        all_sprites_list.add(self)
 
 
 class Background:
@@ -142,7 +164,11 @@ def keys(self):
     key = pygame.key.get_pressed()
     if key[K_SPACE] and player.jumping == False:
         player.jumping = True
+    if key[K_1]:
+        player.castingSpell = True
 
+def collisions():
+    pygame.sprite.spritecollide(player, enemy_list, True)
 
 # Setting speed
 speed = 30
@@ -150,20 +176,27 @@ clock = pygame.time.Clock()
 
 pygame.init()
 
+
+all_sprites_list = pygame.sprite.Group()
 # Object instantiation
-player = Player(100, 100, 200)
+player = Player(100, ground_y)
 background = Background()
 
 enemy_list = pygame.sprite.Group()
 
-enemy_attr = [[250, 310, 20, 60],
-             [450, 310, 20, 60],
-             [850, 310, 20, 60],
-             [1100, 310, 20, 60]]
+enemy_attr = [[250, ground_y],
+             [450, ground_y],
+             [850, ground_y],
+             [1100, ground_y]]
 
 for enemyconfig in enemy_attr:
     enemy = Enemy(*enemyconfig)
     enemy_list.add(enemy)
+
+def gameOver():
+    dead_list = pygame.sprite.spritecollide(player, enemy_list, True)
+    if len(dead_list) > 0:
+        print("YA LOST")
 
 
 run = True
@@ -171,8 +204,6 @@ run = True
 while run:
 
     clock.tick(speed)
-
-    win.fill(WHITE)
 
     background.do_background()
 
@@ -182,6 +213,12 @@ while run:
         enemy.do_enemy()
 
     player.do_player()
+
+    all_sprites_list.draw(win)
+
+    gameOver()
+
+    pygame.display.update()
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
