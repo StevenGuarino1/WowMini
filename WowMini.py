@@ -36,6 +36,8 @@ class Player(pygame.sprite.Sprite):
         self.x_speed = 12
         self.velocity_index = 0
 
+        self.rect = pygame.Rect([int(self.x), int(self.y), 20, 60])
+
     def do_jump(self):
         global velocity
         velocity = list([-7.5, -7, -6.5, -6, -5.5, -5, -4.5, -4, -3.5, -3, -2.5, -2, -1.5, -1, -0.5, 0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5])
@@ -62,7 +64,7 @@ class Player(pygame.sprite.Sprite):
             self.x -= self.x_speed
 
     def do_draw(self):
-        pygame.draw.rect(win, RED, [int(self.x), int(self.y), 20, 60])
+        pygame.draw(self.rect)
 
     def do_player(self):
         self.do_jump()
@@ -71,46 +73,44 @@ class Player(pygame.sprite.Sprite):
         pygame.display.update()
 
 
-class Enemy:
+class Enemy(pygame.sprite.Sprite):
     walkRight = pygame.image.load('place_holder.png')
     walkLeft = pygame.image.load('place_holder.png')
 
-    def __init__(self, x, y, width, height, end):
+    def __init__(self, x, y, width, height):
+        super().__init__()
+
         self.x = x
         self.y = y
 
         self.width = width
         self.height = height
 
-        self.end = end
-        self.path = [self.x, self.end]
+        self.vel = 1
 
-        self.vel = 3
+        self.enemy_killed_list = []
+
+        self.rect = pygame.Rect([int(self.x), int(self.y), 20, 60])
 
     def move(self):
-        # Makes all enemies move at speed of background
-        self.x -= 1.4
 
-        if self.vel > 0:
-            # If not at end keep going right
-            if self.x + self.vel < self.path[1]:
-                self.x += self.vel
-            else:
-                # if at end go left by velocity
-                self.vel = self.vel * -1
-        # if velocity is negative
+        if self.x > player.x:
+            self.x -= self.vel
+        elif self.x == player.x:
+            self.enemy_killed_list = pygame.sprite.spritecollide(player, enemy_list, True)
         else:
-            # If more than starting position go right
-            if self.x - self.vel > self.path[0]:
-                self.x += self.vel
-            else:
-                # If not go keep going left
-                self.vel = self.vel * -1
+            self.x += self.vel
 
     def draw(self):
         self.move()
-        pygame.draw.rect(win, RED, [int(self.x), int(self.y), self.width, self.height])
+        pygame.draw.rect(self.rect) # Created pygames "rect" objects, rect objects used in collision detection in Enemy's move method,
+                                    # TODO Draw rect objects properly
 
+    def do_enemy(self):
+        self.move()
+        # self.checkCollision()
+        self.draw()
+        pygame.display.update()
 
 
 class Background:
@@ -136,11 +136,13 @@ class Background:
     def do_background(self):
         self.do_scroll()
         self.drawBackground()
+        pygame.display.update()
 
 def keys(self):
     key = pygame.key.get_pressed()
     if key[K_SPACE] and player.jumping == False:
         player.jumping = True
+
 
 # Setting speed
 speed = 30
@@ -152,16 +154,17 @@ pygame.init()
 player = Player(100, 100, 200)
 background = Background()
 
-enemy_list = []
+enemy_list = pygame.sprite.Group()
 
-enemy_attr = [[500, 310, 20, 60, 345],
-             [540, 350, 20, 60, 385],
-             [580, 390, 20, 60, 425],
-             [620, 430, 20, 60, 480]]
+enemy_attr = [[250, 310, 20, 60],
+             [450, 310, 20, 60],
+             [850, 310, 20, 60],
+             [1100, 310, 20, 60]]
 
-for i in range(5):
-    enemy = Enemy(enemy_attr[i])
-    enemy_list.append(enemy)
+for enemyconfig in enemy_attr:
+    enemy = Enemy(*enemyconfig)
+    enemy_list.add(enemy)
+
 
 run = True
 
@@ -175,7 +178,8 @@ while run:
 
     keys(player)
 
-    enemy.draw()
+    for enemy in enemy_list:
+        enemy.do_enemy()
 
     player.do_player()
 
