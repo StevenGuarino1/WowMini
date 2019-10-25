@@ -26,7 +26,7 @@ class Player(pygame.sprite.Sprite):
         self.x = x
         self.y = y
 
-        # Is jumping?
+        # Is it jumping?
         self.jumping = False
 
         # Setting boundaries
@@ -62,14 +62,55 @@ class Player(pygame.sprite.Sprite):
             self.x -= self.x_speed
 
     def do_draw(self):
-        global win, WHITE
-        pygame.draw.rect(win, RED, [100, 100, int(self.x), int(self.y)])
+        pygame.draw.rect(win, RED, [int(self.x), int(self.y), 20, 60])
 
     def do_player(self):
         self.do_jump()
         self.do_move()
         self.do_draw()
         pygame.display.update()
+
+
+class Enemy:
+    walkRight = pygame.image.load('place_holder.png')
+    walkLeft = pygame.image.load('place_holder.png')
+
+    def __init__(self, x, y, width, height, end):
+        self.x = x
+        self.y = y
+
+        self.width = width
+        self.height = height
+
+        self.end = end
+        self.path = [self.x, self.end]
+
+        self.vel = 3
+
+    def move(self):
+        # Makes all enemies move at speed of background
+        self.x -= 1.4
+
+        if self.vel > 0:
+            # If not at end keep going right
+            if self.x + self.vel < self.path[1]:
+                self.x += self.vel
+            else:
+                # if at end go left by velocity
+                self.vel = self.vel * -1
+        # if velocity is negative
+        else:
+            # If more than starting position go right
+            if self.x - self.vel > self.path[0]:
+                self.x += self.vel
+            else:
+                # If not go keep going left
+                self.vel = self.vel * -1
+
+    def draw(self):
+        self.move()
+        pygame.draw.rect(win, RED, [int(self.x), int(self.y), self.width, self.height])
+
 
 
 class Background:
@@ -92,7 +133,7 @@ class Background:
         win.blit(self.bg, (self.bgX2, 0))  # draws the second bg image
         pygame.display.update()
 
-    def do_bg(self):
+    def do_background(self):
         self.do_scroll()
         self.drawBackground()
 
@@ -101,148 +142,26 @@ def keys(self):
     if key[K_SPACE] and player.jumping == False:
         player.jumping = True
 
-
-
-
-
-
-
-# class Level(object):
-#     """ This is a generic super-class used to define a level.
-#         Create a child class for each level with level-specific
-#         info. """
-#
-#     def __init__(self, player):
-#         """ Constructor. Pass in a handle to player. Needed for when moving
-#             platforms collide with the player. """
-#         self.platform_list = pygame.sprite.Group()
-#         self.enemy_list = pygame.sprite.Group()
-#         self.player = player
-#
-#         # Background image
-#         self.background = None
-#
-#         # How far this world has been scrolled left/right
-#         self.world_shift = 0
-#         self.level_limit = -1000
-#
-#     # Update everythign on this level
-#     def update(self):
-#         """ Update everything in this level after logic on sprites is completed."""
-#         self.platform_list.update()
-#         self.enemy_list.update()
-#
-#     def draw(self, screen):
-#         """ Draw everything on this level. """
-#
-#         # Draw the background
-#         screen.fill(BLUE)
-#
-#         # Draw all the sprite lists that we have
-#         self.platform_list.draw(screen)
-#         self.enemy_list.draw(screen)
-#
-#     def shift_world(self, shift_x):
-#         """ When the user moves left/right and we need to scroll everything:
-#         """
-#
-#         # Keep track of the shift amount
-#         self.world_shift += shift_x
-#
-#         # Go through all the sprite lists and shift
-#         for platform in self.platform_list:
-#             platform.rect.x += shift_x
-#
-#         for enemy in self.enemy_list:
-#             enemy.rect.x += shift_x
-#
-# # Create platforms for the level
-# class Level_01(Level):
-#     """ Definition for level 1. """
-#
-#     def __init__(self, player):
-#         """ Create level 1. """
-#
-#         # Call the parent constructor
-#         Level.__init__(self, player)
-#
-#         self.level_limit = -1500
-#
-#         # Array with width, height, x, and y of platform
-#         level = [[210, 70, 500, 500],
-#                  [210, 70, 800, 400],
-#                  [210, 70, 1000, 500],
-#                  [210, 70, 1120, 280],
-#                  ]
-#
-#         # Go through the array above and add platforms
-#         for platform in level:
-#             block = Platform(platform[0], platform[1])
-#             block.rect.x = platform[2]
-#             block.rect.y = platform[3]
-#             block.player = self.player
-#             self.platform_list.add(block)
-#
-#         # Add a custom moving platform
-#         block = HorizontalMovingPlatform()
-#         block.rect.x = 550
-#         block.rect.y = 425
-#         block.boundary_left = 500
-#         block.boundary_right = 730
-#         # block.change_x = 1
-#         block.player = self.player
-#         block.level = self
-#         self.platform_list.add(block)
-#
-#
-# # Create platforms for the level
-# class Level_02(Level):
-#     """ Definition for level 2. """
-#
-#     def __init__(self, player):
-#         """ Create level 1. """
-#
-#         # Call the parent constructor
-#         Level.__init__(self, player)
-#
-#         self.level_limit = -1000
-#
-#         # Array with type of platform, and x, y location of the platform.
-#         level = [[210, 70, 500, 550],
-#                  [210, 70, 800, 400],
-#                  [210, 70, 1000, 500],
-#                  [210, 70, 1120, 280],
-#                  ]
-#
-#         # Go through the array above and add platforms
-#         for platform in level:
-#             block = Platform(platform[0], platform[1])
-#             block.rect.x = platform[2]
-#             block.rect.y = platform[3]
-#             block.player = self.player
-#             self.platform_list.add(block)
-#
-#         # Add a custom moving platform
-#         block = MovingPlatform(70, 70)
-#         block.rect.x = 550
-#         block.rect.y = 425
-#         block.boundary_top = 100
-#         block.boundary_bottom = 550
-#         block.change_y = -1
-#         block.player = self.player
-#         block.level = self
-#         self.platform_list.add(block)
-
-
-
-
+# Setting speed
 speed = 30
 clock = pygame.time.Clock()
 
 pygame.init()
 
-player = Player(100, 100, 400)
+# Object instantiation
+player = Player(100, 100, 200)
 background = Background()
+
+enemy_list = []
+
+enemy_attr = [[500, 310, 20, 60, 345],
+             [540, 350, 20, 60, 385],
+             [580, 390, 20, 60, 425],
+             [620, 430, 20, 60, 480]]
+
+for i in range(5):
+    enemy = Enemy(enemy_attr[i])
+    enemy_list.append(enemy)
 
 run = True
 
@@ -252,9 +171,11 @@ while run:
 
     win.fill(WHITE)
 
-    background.do_bg()
+    background.do_background()
 
     keys(player)
+
+    enemy.draw()
 
     player.do_player()
 
